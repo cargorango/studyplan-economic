@@ -855,7 +855,15 @@ function generateResult() {
       <span class="toggle-icon" id="ni-${id}">▶</span>${label}</span>
       <div class="collapsible" id="nd-${id}">${inner}</div></li>`;
   }
-  function cr2(d,c,r){return `${d}${c?`<span style="color:#553c9a"> +${c}🟣</span>`:''} / ${r}`;}
+  function cr2(d,c,r){
+    const base=`${d}${c?`<span style="color:#553c9a"> +${c}🟣</span>`:''} / ${r}`;
+    const lack=r-d;
+    if(lack>0){
+      const lbl=lang==='th'?`ขาดอีก ${lack} cr`:`need ${lack} more cr`;
+      return base+` <span style="font-size:10px;color:#e53e3e;font-weight:700">(${lbl})</span>`;
+    }
+    return base;
+  }
 
   const geS=geDone>=30?'done':geDone>0?'warn':'miss';
   const coreS=(crqDone+celDone)>=coreTotal?'done':(crqDone+celDone)>0?'warn':'miss';
