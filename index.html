@@ -1110,24 +1110,72 @@ function previewSlip(e){
   r.readAsDataURL(f);
 }
 function submitSlip(){
-  if(!document.getElementById('slip-file').files[0]){ alert('กรุณาอัพโหลดสลิปก่อน'); return; }
-  S.subStatus='pending';
-  localStorage.setItem('hub_sub','pending');
-  SLIPS.unshift({id:Date.now(),email:S.user?.email||'',date:new Date().toISOString().slice(0,10),amount:19,note:'รอตรวจสอบ',status:'pending'});
-  closeModal('m-payment'); openModal('m-sent');
+  const file=document.getElementById('slip-file').files[0];
+  if(!file){ alert('กรุณาอัพโหลดสลิปก่อน'); return; }
+  const r=new FileReader();
+  r.onload=ev=>{
+    const slip={
+      id:Date.now(),
+      email:S.user?.email||'',
+      name:S.user?.name||'',
+      date:new Date().toISOString().slice(0,10),
+      amount:19,
+      note:'รอตรวจสอบ',
+      status:'pending',
+      img:ev.target.result
+    };
+    const stored=JSON.parse(localStorage.getItem('hub_slips')||'[]');
+    stored.unshift(slip);
+    localStorage.setItem('hub_slips',JSON.stringify(stored));
+    SLIPS.unshift(slip);
+    S.subStatus='pending';
+    localStorage.setItem('hub_sub','pending');
+    closeModal('m-payment'); openModal('m-sent');
+  };
+  r.readAsDataURL(file);
 }
 
 // ══════════════════════════
 // ADMIN
 // ══════════════════════════
+function loadStoredSlips(){
+  try{
+    const stored=JSON.parse(localStorage.getItem('hub_slips')||'[]');
+    stored.forEach(s=>{
+      if(!SLIPS.find(x=>x.id===s.id)) SLIPS.unshift(s);
+      if(s.email&&!USERS.find(u=>u.email===s.email)){
+        USERS.push({id:Date.now()+Math.random(),email:s.email,name:s.name||s.email,join:s.date,sub:'pending',gpa:'—',lastLogin:s.date});
+      }
+    });
+  }catch(e){}
+}
+function saveSlipStatus(id,status){
+  try{
+    const stored=JSON.parse(localStorage.getItem('hub_slips')||'[]');
+    const s=stored.find(x=>x.id===id); if(s) s.status=status;
+    localStorage.setItem('hub_slips',JSON.stringify(stored));
+  }catch(e){}
+}
+function viewSlipImg(id){
+  const s=SLIPS.find(x=>x.id===id); if(!s||!s.img) return;
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.innerHTML=`<div style="text-align:center;max-width:400px;width:100%">
+    <img src="${s.img}" style="width:100%;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.5);margin-bottom:12px">
+    <div style="color:#fff;font-size:13px;margin-bottom:10px">${s.email} · ${s.date} · ${s.amount}฿</div>
+    <button onclick="this.closest('div[style]').remove()" style="background:#fff;color:#1a365d;border:none;border-radius:20px;padding:9px 28px;font-family:'Sarabun',sans-serif;font-size:14px;font-weight:700;cursor:pointer">ปิด</button>
+  </div>`;
+  ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
+}
 function goAdmin(){
-  if(S.adminUser){ renderAdmin(); showScreen('s-admin'); return; }
+  if(S.adminUser){ loadStoredSlips(); renderAdmin(); showScreen('s-admin'); return; }
   if(S.user && isAdmin()){
     const adm=ADMINS.find(a=>a.email===S.user.email);
     S.adminUser=adm||{...S.user,role:'admin'};
     document.getElementById('role-lbl').textContent=`${S.adminUser.name||S.user.name} · ${S.adminUser.role||'admin'}`;
     document.getElementById('nav-admins').classList.toggle('hidden', S.adminUser.role!=='superadmin');
-    renderAdmin(); showScreen('s-admin'); return;
+    loadStoredSlips(); renderAdmin(); showScreen('s-admin'); return;
   }
   showScreen('s-admin-login');
 }
@@ -1141,7 +1189,7 @@ function adminLogin(){
   S.adminUser=adm;
   document.getElementById('role-lbl').textContent=`${adm.name} · ${adm.role}`;
   document.getElementById('nav-admins').classList.toggle('hidden', adm.role!=='superadmin');
-  renderAdmin();
+  loadStoredSlips(); renderAdmin();
   showScreen('s-admin');
 }
 function adminLogout(){ S.adminUser=null; showScreen('s-admin-login'); }
@@ -1178,10 +1226,12 @@ function renderAdmin(){
   document.getElementById('slips-body').innerHTML=SLIPS.map(s=>`<tr>
     <td>${s.email}</td><td>${s.date}</td><td>${s.amount}฿</td><td>${s.note}</td>
     <td><span class="br ${s.status==='approved'?'active':s.status}">${s.status==='approved'?'อนุมัติแล้ว':s.status==='pending'?'รอตรวจสอบ':'ปฏิเสธ'}</span></td>
-    <td style="display:flex;gap:5px;flex-wrap:wrap">${s.status==='pending'
-      ?`<button class="bsm ok" onclick="approveSlip(${s.id})">อนุมัติ</button>
-        <button class="bsm no" onclick="rejectSlip(${s.id})">ปฏิเสธ</button>`
-      :''}
+    <td style="display:flex;gap:5px;flex-wrap:wrap">
+      ${s.img?`<button class="bsm vi" onclick="viewSlipImg(${s.id})">🖼 ดูสลิป</button>`:''}
+      ${s.status==='pending'
+        ?`<button class="bsm ok" onclick="approveSlip(${s.id})">อนุมัติ</button>
+          <button class="bsm no" onclick="rejectSlip(${s.id})">ปฏิเสธ</button>`
+        :''}
       ${isSA?`<button class="bsm ed" onclick="editSlip(${s.id})">แก้ไข</button>
         <button class="bsm de" onclick="deleteSlip(${s.id})">ลบ</button>`:''}
     </td>
@@ -1226,6 +1276,7 @@ function approveSlip(id){
     u.subExpiry=expiry.toISOString().split('T')[0];
     setSubExpiry(s.email, new Date());
   }
+  saveSlipStatus(s.id,'approved');
   localStorage.setItem('hub_notify_'+s.email, JSON.stringify({type:'approved',ts:Date.now()}));
   renderAdmin();
 }
@@ -1233,6 +1284,7 @@ function rejectSlip(id){
   const s=SLIPS.find(x=>x.id===id);
   if(s){
     s.status='rejected';
+    saveSlipStatus(s.id,'rejected');
     localStorage.setItem('hub_notify_'+s.email, JSON.stringify({type:'rejected',ts:Date.now()}));
     renderAdmin();
   }
