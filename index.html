@@ -12,6 +12,7 @@
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js');}</script>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Sarabun',sans-serif;color:#2d3748;min-height:100vh;overflow-x:hidden}
@@ -654,6 +655,13 @@ body{font-family:'Sarabun',sans-serif;color:#2d3748;min-height:100vh;overflow-x:
 
 <script>
 // ══════════════════════════
+// SUPABASE
+// ══════════════════════════
+const SB_URL='https://ebvhqyzfloxinpoubvxc.supabase.co';
+const SB_KEY='sb_publishable_Q3HkOHw2BSzcGcvjFRUCsA_J8IXkVmX';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+
+// ══════════════════════════
 // LANG
 // ══════════════════════════
 let curLang = localStorage.getItem('hub_lang') || 'th';
@@ -1045,10 +1053,20 @@ function refreshGate(){
 // ══════════════════════════
 // AUTH
 // ══════════════════════════
-function onGoogleLogin(res){
+async function onGoogleLogin(res){
   const payload=JSON.parse(atob(res.credential.split('.')[1]));
   S.user={email:payload.email,name:payload.name||payload.email.split('@')[0],av:(payload.name||'U')[0].toUpperCase()};
   localStorage.setItem('hub_user',JSON.stringify(S.user));
+  try{
+    const{data}=await sb.from('hub_users').select('sub_status,sub_expiry').eq('email',S.user.email).maybeSingle();
+    if(data){
+      S.subStatus=data.sub_status||'none';
+      S.subExpiry=data.sub_expiry||null;
+      localStorage.setItem('hub_sub',S.subStatus);
+      if(S.subExpiry) localStorage.setItem('hub_sub_expiry',S.subExpiry);
+    }
+    await sb.from('hub_users').upsert({email:S.user.email,name:S.user.name,last_login:new Date().toISOString()},{onConflict:'email'});
+  }catch(e){ console.error(e); }
   renderTopUser(); checkExpiry();
   closeModal('m-login');
   if(S.pendingFeature){ const f=S.pendingFeature; S.pendingFeature=null; gotoFeature(f); }
@@ -1109,73 +1127,80 @@ function previewSlip(e){
   };
   r.readAsDataURL(f);
 }
-function submitSlip(){
+async function submitSlip(){
   const file=document.getElementById('slip-file').files[0];
   if(!file){ alert('กรุณาอัพโหลดสลิปก่อน'); return; }
-  const r=new FileReader();
-  r.onload=ev=>{
-    const slip={
-      id:Date.now(),
-      email:S.user?.email||'',
-      name:S.user?.name||'',
+  const sendBtn=document.querySelector('#m-payment .btn-pri');
+  if(sendBtn){ sendBtn.textContent='⏳ กำลังส่ง...'; sendBtn.disabled=true; }
+  try{
+    const ext=file.name.split('.').pop()||'jpg';
+    const fileName=`${Date.now()}_${(S.user?.email||'unknown').replace(/[@.]/g,'_')}.${ext}`;
+    const{error:upErr}=await sb.storage.from('Slips').upload(fileName,file,{contentType:file.type,upsert:true});
+    if(upErr) throw upErr;
+    const{data:urlData}=sb.storage.from('Slips').getPublicUrl(fileName);
+    const imgUrl=urlData.publicUrl;
+    const{error:insErr}=await sb.from('slips').insert({
+      email:S.user?.email||'',name:S.user?.name||'',
       date:new Date().toISOString().slice(0,10),
-      amount:19,
-      note:'รอตรวจสอบ',
-      status:'pending',
-      img:ev.target.result
-    };
-    const stored=JSON.parse(localStorage.getItem('hub_slips')||'[]');
-    stored.unshift(slip);
-    localStorage.setItem('hub_slips',JSON.stringify(stored));
-    SLIPS.unshift(slip);
+      amount:19,note:'รอตรวจสอบ',status:'pending',img_url:imgUrl
+    });
+    if(insErr) throw insErr;
+    if(S.user?.email){
+      await sb.from('hub_users').upsert({
+        email:S.user.email,name:S.user.name,
+        sub_status:'pending',last_login:new Date().toISOString()
+      },{onConflict:'email'});
+    }
     S.subStatus='pending';
     localStorage.setItem('hub_sub','pending');
     closeModal('m-payment'); openModal('m-sent');
-  };
-  r.readAsDataURL(file);
+  }catch(e){
+    console.error(e);
+    alert('เกิดข้อผิดพลาด กรุณาลองใหม่: '+e.message);
+  }finally{
+    if(sendBtn){ sendBtn.textContent='✅ ส่งสลิป'; sendBtn.disabled=false; }
+  }
 }
 
 // ══════════════════════════
 // ADMIN
 // ══════════════════════════
-function loadStoredSlips(){
+async function loadStoredSlips(){
   try{
-    const stored=JSON.parse(localStorage.getItem('hub_slips')||'[]');
-    stored.forEach(s=>{
-      if(!SLIPS.find(x=>x.id===s.id)) SLIPS.unshift(s);
+    const{data,error}=await sb.from('slips').select('*').order('created_at',{ascending:false});
+    if(error) throw error;
+    SLIPS.length=0;
+    (data||[]).forEach(s=>{
+      SLIPS.push({id:s.id,email:s.email,name:s.name,date:s.date,amount:s.amount,note:s.note,status:s.status,img_url:s.img_url});
       if(s.email&&!USERS.find(u=>u.email===s.email)){
-        USERS.push({id:Date.now()+Math.random(),email:s.email,name:s.name||s.email,join:s.date,sub:'pending',gpa:'—',lastLogin:s.date});
+        USERS.push({id:s.id,email:s.email,name:s.name||s.email,join:s.date,sub:s.status==='approved'?'active':s.status==='pending'?'pending':'none',gpa:'—',lastLogin:s.date});
       }
     });
-  }catch(e){}
-}
-function saveSlipStatus(id,status){
-  try{
-    const stored=JSON.parse(localStorage.getItem('hub_slips')||'[]');
-    const s=stored.find(x=>x.id===id); if(s) s.status=status;
-    localStorage.setItem('hub_slips',JSON.stringify(stored));
-  }catch(e){}
+  }catch(e){
+    console.error('loadStoredSlips error:',e);
+  }
 }
 function viewSlipImg(id){
-  const s=SLIPS.find(x=>x.id===id); if(!s||!s.img) return;
+  const s=SLIPS.find(x=>x.id===id);
+  const src=s?.img_url||s?.img; if(!src) return;
   const ov=document.createElement('div');
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
   ov.innerHTML=`<div style="text-align:center;max-width:400px;width:100%">
-    <img src="${s.img}" style="width:100%;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.5);margin-bottom:12px">
+    <img src="${src}" style="width:100%;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.5);margin-bottom:12px">
     <div style="color:#fff;font-size:13px;margin-bottom:10px">${s.email} · ${s.date} · ${s.amount}฿</div>
-    <button onclick="this.closest('div[style]').remove()" style="background:#fff;color:#1a365d;border:none;border-radius:20px;padding:9px 28px;font-family:'Sarabun',sans-serif;font-size:14px;font-weight:700;cursor:pointer">ปิด</button>
+    <button onclick="this.closest('[style]').remove()" style="background:#fff;color:#1a365d;border:none;border-radius:20px;padding:9px 28px;font-family:'Sarabun',sans-serif;font-size:14px;font-weight:700;cursor:pointer">ปิด</button>
   </div>`;
   ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); });
   document.body.appendChild(ov);
 }
-function goAdmin(){
-  if(S.adminUser){ loadStoredSlips(); renderAdmin(); showScreen('s-admin'); return; }
+async function goAdmin(){
+  if(S.adminUser){ await loadStoredSlips(); renderAdmin(); showScreen('s-admin'); return; }
   if(S.user && isAdmin()){
     const adm=ADMINS.find(a=>a.email===S.user.email);
     S.adminUser=adm||{...S.user,role:'admin'};
     document.getElementById('role-lbl').textContent=`${S.adminUser.name||S.user.name} · ${S.adminUser.role||'admin'}`;
     document.getElementById('nav-admins').classList.toggle('hidden', S.adminUser.role!=='superadmin');
-    loadStoredSlips(); renderAdmin(); showScreen('s-admin'); return;
+    await loadStoredSlips(); renderAdmin(); showScreen('s-admin'); return;
   }
   showScreen('s-admin-login');
 }
@@ -1189,8 +1214,7 @@ function adminLogin(){
   S.adminUser=adm;
   document.getElementById('role-lbl').textContent=`${adm.name} · ${adm.role}`;
   document.getElementById('nav-admins').classList.toggle('hidden', adm.role!=='superadmin');
-  loadStoredSlips(); renderAdmin();
-  showScreen('s-admin');
+  loadStoredSlips().then(()=>{ renderAdmin(); showScreen('s-admin'); });
 }
 function adminLogout(){ S.adminUser=null; showScreen('s-admin-login'); }
 function aNav(sec){
@@ -1266,28 +1290,27 @@ function viewUser(id){
   openModal('m-detail');
 }
 function deleteUser(id){ if(!confirm('ยืนยันลบผู้ใช้?')) return; USERS=USERS.filter(u=>u.id!==id); renderAdmin(); }
-function approveSlip(id){
+async function approveSlip(id){
   const s=SLIPS.find(x=>x.id===id); if(!s) return;
+  await sb.from('slips').update({status:'approved'}).eq('id',id);
   s.status='approved';
   const u=USERS.find(x=>x.email===s.email);
   if(u){
     u.sub='active';
     const expiry=new Date(); expiry.setDate(expiry.getDate()+32);
     u.subExpiry=expiry.toISOString().split('T')[0];
-    setSubExpiry(s.email, new Date());
+    setSubExpiry(s.email,new Date());
+    await sb.from('hub_users').upsert({email:s.email,sub_status:'active',sub_expiry:u.subExpiry},{onConflict:'email'});
   }
-  saveSlipStatus(s.id,'approved');
-  localStorage.setItem('hub_notify_'+s.email, JSON.stringify({type:'approved',ts:Date.now()}));
+  await sb.from('notifications').insert({user_email:s.email,type:'approved',read:false});
   renderAdmin();
 }
-function rejectSlip(id){
-  const s=SLIPS.find(x=>x.id===id);
-  if(s){
-    s.status='rejected';
-    saveSlipStatus(s.id,'rejected');
-    localStorage.setItem('hub_notify_'+s.email, JSON.stringify({type:'rejected',ts:Date.now()}));
-    renderAdmin();
-  }
+async function rejectSlip(id){
+  const s=SLIPS.find(x=>x.id===id); if(!s) return;
+  await sb.from('slips').update({status:'rejected'}).eq('id',id);
+  s.status='rejected';
+  await sb.from('notifications').insert({user_email:s.email,type:'rejected',read:false});
+  renderAdmin();
 }
 function deleteSlip(id){ if(!confirm('ยืนยันลบสลิปนี้?')) return; SLIPS=SLIPS.filter(s=>s.id!==id); renderAdmin(); }
 function removeAdmin(email){
@@ -1377,24 +1400,24 @@ document.querySelectorAll('.overlay').forEach(o=>{
 // ══════════════════════════
 applyLang();
 checkExpiry();
-// check for approval/rejection notification from admin
-(function(){
+// check for approval/rejection notification from Supabase
+(async function(){
   if(!S.user || !S.user.email) return;
-  const raw = localStorage.getItem('hub_notify_'+S.user.email);
-  if(!raw) return;
   try{
-    const n = JSON.parse(raw);
-    localStorage.removeItem('hub_notify_'+S.user.email);
-    if(n.type === 'approved'){
-      S.subStatus = 'active';
+    const{data}=await sb.from('notifications')
+      .select('*').eq('user_email',S.user.email).eq('read',false)
+      .order('created_at',{ascending:false}).limit(1);
+    if(!data||!data.length) return;
+    const n=data[0];
+    await sb.from('notifications').update({read:true}).eq('id',n.id);
+    if(n.type==='approved'){
+      S.subStatus='active';
       localStorage.setItem('hub_sub','active');
-      const banner = document.getElementById('approval-banner');
-      if(banner) banner.style.display = 'block';
-    } else if(n.type === 'rejected'){
-      const banner = document.getElementById('rejection-banner');
-      if(banner) banner.style.display = 'block';
+      document.getElementById('approval-banner').style.display='block';
+    } else if(n.type==='rejected'){
+      document.getElementById('rejection-banner').style.display='block';
     }
-  }catch(e){}
+  }catch(e){ console.error(e); }
 })();
 (function(){
   const go = sessionStorage.getItem('hub_goto');
