@@ -1146,23 +1146,31 @@ function checkExpiry(){
   const hoursLeft=msLeft/(1000*60*60);
   const daysLeft=msLeft/(1000*60*60*24);
 
+  // past 48h grace window — clear expiry tracking (grade data in localStorage untouched)
   if(hoursLeft<-48){
-    // grace period 2 วันผ่านไปแล้ว — ปิดสิทธิ์ แต่ไม่ลบข้อมูลเกรด (hub_grades_email ยังอยู่ใน localStorage)
     S.subStatus='none'; S.subExpiry=null;
     localStorage.setItem('hub_sub','none');
     localStorage.removeItem('hub_sub_expiry');
     return;
   }
-  // ≤ 24 ชม. — แบนเนอร์แดงด่วน
+  // expired — lock features immediately, data preserved so it restores when admin re-activates
+  if(hoursLeft<=0){
+    S.subStatus='none';
+    const banner=document.getElementById('expiry-banner');
+    const msg=document.getElementById('expiry-msg');
+    if(banner&&msg){
+      msg.textContent='⚠️ แพ็กเกจของท่านหมดอายุแล้ว — กรุณาชำระเงินเพื่อกลับมาใช้งานต่อเนื่อง';
+      banner.style.display='block';
+      document.body.style.paddingTop='42px';
+    }
+    return;
+  }
+  // ≤ 24 ชม. ก่อนหมดอายุ — แบนเนอร์แดงด่วน
   if(hoursLeft<=24){
     const banner=document.getElementById('expiry-banner');
     const msg=document.getElementById('expiry-msg');
     if(!banner||!msg) return;
-    if(hoursLeft<=0){
-      msg.textContent='⚠️ กรุณาชำระค่าบริการ — ระบบคำนวณคะแนนของท่านกำลังจะหมดอายุในวันนี้ (เหลือเวลา '+(Math.max(0,Math.floor(hoursLeft+24)))+' ชม. ก่อนระบบปิด)';
-    } else {
-      msg.textContent='⏰ แพ็กเกจของท่านจะหมดอายุใน '+Math.ceil(hoursLeft)+' ชั่วโมง — กรุณาชำระเงินเพื่อใช้งานต่อเนื่อง';
-    }
+    msg.textContent='⏰ แพ็กเกจของท่านจะหมดอายุใน '+Math.ceil(hoursLeft)+' ชั่วโมง — กรุณาชำระเงินเพื่อใช้งานต่อเนื่อง';
     banner.style.display='block';
     document.body.style.paddingTop='42px';
     return;
