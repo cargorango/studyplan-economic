@@ -501,7 +501,7 @@ body{font-family:'Sarabun',sans-serif;color:#2d3748;min-height:100vh;overflow-x:
             <button class="bsm vi" onclick="loadPlannerBackups()">🔄 รีเฟรช</button>
           </div>
           <table class="atbl"><thead><tr>
-            <th>อีเมล</th><th>หลักสูตร</th><th>ปีที่เรียน</th><th>วิชาที่ลงทะเบียน</th><th>อัปเดตล่าสุด</th><th>สถานะ</th>
+            <th>อีเมล</th><th>หลักสูตร</th><th>ปีที่เรียน</th><th>วิชาที่ลงทะเบียน</th><th>อัปเดตล่าสุด</th><th>สถานะ</th><th>การจัดการ</th>
           </tr></thead><tbody id="planner-body"><tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:24px">กดรีเฟรชเพื่อโหลดข้อมูล</td></tr></tbody></table>
         </div>
       </div>
@@ -642,6 +642,49 @@ body{font-family:'Sarabun',sans-serif;color:#2d3748;min-height:100vh;overflow-x:
     <div class="field"><label>รหัสผ่าน</label><input type="text" id="new-admin-pw" placeholder="ตั้งรหัสผ่าน" value="admin123"></div>
     <button class="btn-pri" onclick="confirmAddAdmin()">✅ เพิ่ม Admin</button>
     <button class="btn-can" onclick="closeModal('m-add-admin')">ยกเลิก</button>
+  </div>
+</div>
+
+<div class="overlay hidden" id="m-edit-planner">
+  <div class="modal" style="max-width:420px;text-align:left">
+    <h2 style="margin-bottom:4px">✏️ แก้ไข Backup แพลนเนอร์</h2>
+    <p style="font-size:13px;color:#94a3b8;margin-bottom:16px" id="ep-email"></p>
+    <input type="hidden" id="ep-email-hidden">
+    <div class="field">
+      <label>หลักสูตร</label>
+      <select id="ep-prog" style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:14px">
+        <option value="regular">ภาคปกติ</option>
+        <option value="intl">นานาชาติ</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>ปีที่เรียน</label>
+      <select id="ep-year" style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:14px">
+        <option value="">— ไม่ระบุ —</option>
+        <option value="ปี 1 เทอม 1">ปี 1 เทอม 1</option>
+        <option value="ปี 1 เทอม 2">ปี 1 เทอม 2</option>
+        <option value="ปี 2 เทอม 1">ปี 2 เทอม 1</option>
+        <option value="ปี 2 เทอม 2">ปี 2 เทอม 2</option>
+        <option value="ปี 3 เทอม 1">ปี 3 เทอม 1</option>
+        <option value="ปี 3 เทอม 2">ปี 3 เทอม 2</option>
+        <option value="ปี 4 เทอม 1">ปี 4 เทอม 1</option>
+        <option value="ปี 4 เทอม 2">ปี 4 เทอม 2</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>สถานะข้อมูล</label>
+      <select id="ep-clear" style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:14px">
+        <option value="active">✅ Active (ใช้งานอยู่)</option>
+        <option value="cleared">🗑️ ถูกล้างแล้ว (นับ 45 วัน)</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap">
+      <button class="btn-pri" style="flex:1" onclick="savePlannerEdit()">💾 บันทึก</button>
+      <button class="btn-can" onclick="closeModal('m-edit-planner')">ยกเลิก</button>
+    </div>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid #f0f4f8">
+      <button id="ep-del-btn" class="bsm de" style="width:100%;padding:9px" onclick="deletePlannerData(document.getElementById('ep-email-hidden').value)">🗑 ลบข้อมูล backup ทั้งหมด (Superadmin)</button>
+    </div>
   </div>
 </div>
 
@@ -921,6 +964,7 @@ let SLIPS=[
 ];
 const SUPERADMIN={email:'kraten25ten@gmail.com', name:'Kraten (Owner)', role:'superadmin'};
 let ADMINS=[SUPERADMIN];
+let PLANNER_DATA=[];
 const CREDS={'kraten25ten@gmail.com':'admin123'};
 // load extra admins from localStorage
 (function(){
@@ -1390,15 +1434,16 @@ function deleteSlip(id){ if(!confirm('ยืนยันลบสลิปนี
 async function loadPlannerBackups(){
   const tbody=document.getElementById('planner-body');
   if(!tbody) return;
-  tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:24px">⏳ กำลังโหลด...</td></tr>`;
+  tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:24px">⏳ กำลังโหลด...</td></tr>`;
   try{
     const{data,error}=await sb.from('planner_data').select('*').order('updated_at',{ascending:false});
     if(error) throw error;
-    if(!data||data.length===0){
-      tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:24px">ยังไม่มีข้อมูล backup</td></tr>`;
+    PLANNER_DATA=data||[];
+    if(!PLANNER_DATA.length){
+      tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:24px">ยังไม่มีข้อมูล backup</td></tr>`;
       return;
     }
-    tbody.innerHTML=data.map(r=>{
+    tbody.innerHTML=PLANNER_DATA.map(r=>{
       const courseCount=Object.values(r.st_data||{}).filter(v=>v.s&&v.s!=='none').length;
       const curCount=Object.values(r.st_data||{}).filter(v=>v.s==='current').length;
       const doneCount=Object.values(r.st_data||{}).filter(v=>v.s==='done').length;
@@ -1413,6 +1458,7 @@ async function loadPlannerBackups(){
       } else {
         statusHtml=`<span class="br active" style="font-size:11px">Active</span>`;
       }
+      const emailKey=r.email.replace(/'/g,"\\'");
       return `<tr>
         <td style="font-size:13px">${r.email}</td>
         <td style="font-size:12px">${r.prog==='intl'?'นานาชาติ':'ภาคปกติ'}</td>
@@ -1420,12 +1466,48 @@ async function loadPlannerBackups(){
         <td style="font-size:12px">กำลังเรียน <b>${curCount}</b> · ผ่านแล้ว <b>${doneCount}</b> (รวม ${courseCount})</td>
         <td style="font-size:12px">${updDate}</td>
         <td>${statusHtml}</td>
+        <td><button class="bsm ed" onclick="editPlannerData('${emailKey}')">แก้ไข</button></td>
       </tr>`;
     }).join('');
   }catch(e){
     console.error('loadPlannerBackups:',e);
-    tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;color:#e53e3e;padding:24px">เกิดข้อผิดพลาด: ${e.message}</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;color:#e53e3e;padding:24px">เกิดข้อผิดพลาด: ${e.message}</td></tr>`;
   }
+}
+function editPlannerData(email){
+  const r=PLANNER_DATA.find(x=>x.email===email); if(!r) return;
+  const isSA=S.adminUser?.role==='superadmin';
+  document.getElementById('ep-email').textContent=email;
+  document.getElementById('ep-email-hidden').value=email;
+  document.getElementById('ep-prog').value=r.prog||'regular';
+  document.getElementById('ep-year').value=r.year_sem||'';
+  document.getElementById('ep-clear').value=r.clear_at?'cleared':'active';
+  document.getElementById('ep-del-btn').style.display=isSA?'inline-block':'none';
+  openModal('m-edit-planner');
+}
+async function savePlannerEdit(){
+  const email=document.getElementById('ep-email-hidden').value;
+  const prog=document.getElementById('ep-prog').value;
+  const yearSem=document.getElementById('ep-year').value;
+  const clearVal=document.getElementById('ep-clear').value;
+  const r=PLANNER_DATA.find(x=>x.email===email); if(!r) return;
+  const clearAt=clearVal==='cleared'?(r.clear_at||new Date().toISOString()):null;
+  try{
+    await sb.from('planner_data').update({
+      prog,year_sem:yearSem,clear_at:clearAt,updated_at:new Date().toISOString()
+    }).eq('email',email);
+    r.prog=prog; r.year_sem=yearSem; r.clear_at=clearAt;
+    closeModal('m-edit-planner');
+    loadPlannerBackups();
+  }catch(e){ alert('บันทึกไม่สำเร็จ: '+e.message); }
+}
+async function deletePlannerData(email){
+  if(!confirm(`ลบข้อมูล backup ของ ${email} ทั้งหมดเลยใช่ไหม?`)) return;
+  try{
+    await sb.from('planner_data').delete().eq('email',email);
+    closeModal('m-edit-planner');
+    loadPlannerBackups();
+  }catch(e){ alert('ลบไม่สำเร็จ: '+e.message); }
 }
 function removeAdmin(email){
   if(email==='kraten25ten@gmail.com'){ alert('ไม่สามารถลบ Superadmin ได้'); return; }
