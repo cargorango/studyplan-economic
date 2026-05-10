@@ -1271,7 +1271,12 @@ async function onGoogleLogin(res){
       if(S.subExpiry) localStorage.setItem('hub_sub_expiry',S.subExpiry);
     }
     await sb.from('hub_users').upsert({email:S.user.email,name:S.user.name,last_login:new Date().toISOString()},{onConflict:'email'});
-    if(S.subStatus==='active') await loadGradesFromDB();
+    if(S.subStatus==='active'){
+      await loadGradesFromDB();
+      // push localStorage grades to DB if DB was empty
+      const local=localStorage.getItem('hub_grades_'+S.user.email);
+      if(local) try{ const g=JSON.parse(local); if(g?.length){ await sb.from('grade_backups').upsert({email:S.user.email,grades_data:g,updated_at:new Date().toISOString()},{onConflict:'email'}); } }catch(_){}
+    }
   }catch(e){ console.error(e); }
   renderTopUser(); checkExpiry(); startHeartbeat();
   closeModal('m-login');
