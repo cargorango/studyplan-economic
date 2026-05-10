@@ -464,6 +464,7 @@ body{font-family:'Sarabun',sans-serif;color:#2d3748;min-height:100vh;overflow-x:
       <div class="admin-nav">
         <div class="a-nav active" id="nav-users" onclick="aNav('users')">👥 ผู้ใช้ทั้งหมด</div>
         <div class="a-nav" id="nav-slips" onclick="aNav('slips')">💳 สลิปรอตรวจ</div>
+        <div class="a-nav" id="nav-planner" onclick="aNav('planner');loadPlannerBackups()">📚 Backup แพลนเนอร์</div>
         <div class="a-nav hidden" id="nav-admins" onclick="aNav('admins')">🔑 จัดการ Admin</div>
       </div>
       <div class="admin-foot">
@@ -491,6 +492,18 @@ body{font-family:'Sarabun',sans-serif;color:#2d3748;min-height:100vh;overflow-x:
       <div class="a-section" id="sec-slips">
         <div class="tbl-head-bar" style="background:#fff;border-radius:12px 12px 0 0;border:1px solid #f3e8ff;border-bottom:none"><span>💳 สลิปที่ส่งมา</span><span id="slip-cnt" style="font-size:12px;color:#94a3b8"></span></div>
         <div id="slips-cards" style="display:flex;flex-direction:column;gap:14px;padding:4px 0 8px"></div>
+      </div>
+
+      <div class="a-section" id="sec-planner">
+        <div class="tbl-wrap">
+          <div class="tbl-head-bar">
+            <span>📚 Backup ข้อมูลแพลนเนอร์</span>
+            <button class="bsm vi" onclick="loadPlannerBackups()">🔄 รีเฟรช</button>
+          </div>
+          <table class="atbl"><thead><tr>
+            <th>อีเมล</th><th>หลักสูตร</th><th>ปีที่เรียน</th><th>วิชาที่ลงทะเบียน</th><th>อัปเดตล่าสุด</th><th>สถานะ</th>
+          </tr></thead><tbody id="planner-body"><tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:24px">กดรีเฟรชเพื่อโหลดข้อมูล</td></tr></tbody></table>
+        </div>
       </div>
 
       <div class="a-section" id="sec-admins">
@@ -1374,6 +1387,46 @@ async function rejectSlip(id){
   renderAdmin();
 }
 function deleteSlip(id){ if(!confirm('ยืนยันลบสลิปนี้?')) return; SLIPS=SLIPS.filter(s=>s.id!==id); renderAdmin(); }
+async function loadPlannerBackups(){
+  const tbody=document.getElementById('planner-body');
+  if(!tbody) return;
+  tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:24px">⏳ กำลังโหลด...</td></tr>`;
+  try{
+    const{data,error}=await sb.from('planner_data').select('*').order('updated_at',{ascending:false});
+    if(error) throw error;
+    if(!data||data.length===0){
+      tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:24px">ยังไม่มีข้อมูล backup</td></tr>`;
+      return;
+    }
+    tbody.innerHTML=data.map(r=>{
+      const courseCount=Object.values(r.st_data||{}).filter(v=>v.s&&v.s!=='none').length;
+      const curCount=Object.values(r.st_data||{}).filter(v=>v.s==='current').length;
+      const doneCount=Object.values(r.st_data||{}).filter(v=>v.s==='done').length;
+      const updDate=r.updated_at?new Date(r.updated_at).toLocaleDateString('th-TH'):'—';
+      let statusHtml='';
+      if(r.clear_at){
+        const expiry=new Date(r.clear_at); expiry.setDate(expiry.getDate()+45);
+        const daysLeft=Math.ceil((expiry-new Date())/(1000*60*60*24));
+        statusHtml=daysLeft>0
+          ?`<span class="br none" style="font-size:11px">ถูกล้างแล้ว · ลบใน ${daysLeft} วัน</span>`
+          :`<span class="br" style="font-size:11px;background:#fee2e2;color:#991b1b">หมดอายุแล้ว</span>`;
+      } else {
+        statusHtml=`<span class="br active" style="font-size:11px">Active</span>`;
+      }
+      return `<tr>
+        <td style="font-size:13px">${r.email}</td>
+        <td style="font-size:12px">${r.prog==='intl'?'นานาชาติ':'ภาคปกติ'}</td>
+        <td style="font-size:12px">${r.year_sem||'—'}</td>
+        <td style="font-size:12px">กำลังเรียน <b>${curCount}</b> · ผ่านแล้ว <b>${doneCount}</b> (รวม ${courseCount})</td>
+        <td style="font-size:12px">${updDate}</td>
+        <td>${statusHtml}</td>
+      </tr>`;
+    }).join('');
+  }catch(e){
+    console.error('loadPlannerBackups:',e);
+    tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;color:#e53e3e;padding:24px">เกิดข้อผิดพลาด: ${e.message}</td></tr>`;
+  }
+}
 function removeAdmin(email){
   if(email==='kraten25ten@gmail.com'){ alert('ไม่สามารถลบ Superadmin ได้'); return; }
   if(!confirm('ยืนยันลบ Admin นี้?')) return;
