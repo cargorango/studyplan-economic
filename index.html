@@ -461,6 +461,7 @@ body{font-family:'Sarabun',sans-serif;color:#2d3748;min-height:100vh;overflow-x:
         <div class="a-nav" id="nav-premium" onclick="aNav('premium');loadPremiumUsers()">💎 ลูกค้า Premium</div>
         <div class="a-nav" id="nav-online" onclick="aNav('online');initOnlineSection()">🟢 ออนไลน์ตอนนี้</div>
         <div class="a-nav" id="nav-planner" onclick="aNav('planner');loadPlannerBackups()">📚 Backup แพลนเนอร์</div>
+        <div class="a-nav" id="nav-grades" onclick="aNav('grades');loadGradeBackups()">📊 Backup เกรด</div>
         <div class="a-nav hidden" id="nav-admins" onclick="aNav('admins')">🔑 จัดการ Admin</div>
       </div>
       <div class="admin-foot">
@@ -536,6 +537,18 @@ body{font-family:'Sarabun',sans-serif;color:#2d3748;min-height:100vh;overflow-x:
           <table class="atbl"><thead><tr>
             <th>อีเมล</th><th>หลักสูตร</th><th>ปีที่เรียน</th><th>วิชาที่ลงทะเบียน</th><th>อัปเดตล่าสุด</th><th>สถานะ</th><th>การจัดการ</th>
           </tr></thead><tbody id="planner-body"><tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:24px">กดรีเฟรชเพื่อโหลดข้อมูล</td></tr></tbody></table>
+        </div>
+      </div>
+
+      <div class="a-section" id="sec-grades">
+        <div class="tbl-wrap">
+          <div class="tbl-head-bar">
+            <span>📊 Backup ข้อมูลคำนวณเกรด</span>
+            <button class="bsm vi" onclick="loadGradeBackups()">🔄 รีเฟรช</button>
+          </div>
+          <table class="atbl"><thead><tr>
+            <th>อีเมล</th><th>จำนวนวิชา</th><th>อัปเดตล่าสุด</th><th>การจัดการ</th>
+          </tr></thead><tbody id="grades-backup-body"><tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:24px">กดรีเฟรชเพื่อโหลดข้อมูล</td></tr></tbody></table>
         </div>
       </div>
 
@@ -1103,11 +1116,15 @@ function autoSaveScores(){
   _saveTimer=setTimeout(()=>{
     if(!S.user||!S.user.email) return;
     localStorage.setItem('hub_grades_'+S.user.email, JSON.stringify(courses));
+    saveGradesToDB();
   },800);
 }
 
 function manualSave(){
-  if(S.user&&S.user.email) localStorage.setItem('hub_grades_'+S.user.email, JSON.stringify(courses));
+  if(S.user&&S.user.email){
+    localStorage.setItem('hub_grades_'+S.user.email, JSON.stringify(courses));
+    saveGradesToDB();
+  }
   const t=document.getElementById('save-toast');
   t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2200);
@@ -1124,6 +1141,25 @@ function loadSavedScores(){
     nextId=Math.max(...courses.map(c=>c.id))+1;
     return true;
   }catch(e){ return false; }
+}
+async function saveGradesToDB(){
+  if(!S.user||!S.user.email||S.subStatus!=='active') return;
+  try{
+    await sb.from('grade_backups').upsert({
+      email:S.user.email,
+      grades_data:courses,
+      updated_at:new Date().toISOString()
+    },{onConflict:'email'});
+  }catch(e){ console.error('saveGradesToDB:',e); }
+}
+async function loadGradesFromDB(){
+  if(!S.user||!S.user.email) return;
+  try{
+    const{data}=await sb.from('grade_backups').select('grades_data').eq('email',S.user.email).maybeSingle();
+    if(data&&data.grades_data&&data.grades_data.length){
+      localStorage.setItem('hub_grades_'+S.user.email,JSON.stringify(data.grades_data));
+    }
+  }catch(e){ console.error('loadGradesFromDB:',e); }
 }
 
 // ══════════════════════════
@@ -1235,6 +1271,7 @@ async function onGoogleLogin(res){
       if(S.subExpiry) localStorage.setItem('hub_sub_expiry',S.subExpiry);
     }
     await sb.from('hub_users').upsert({email:S.user.email,name:S.user.name,last_login:new Date().toISOString()},{onConflict:'email'});
+    if(S.subStatus==='active') await loadGradesFromDB();
   }catch(e){ console.error(e); }
   renderTopUser(); checkExpiry(); startHeartbeat();
   closeModal('m-login');
@@ -1763,6 +1800,41 @@ async function deletePlannerData(email){
     loadPlannerBackups();
   }catch(e){ alert('ลบไม่สำเร็จ: '+e.message); }
 }
+async function loadGradeBackups(){
+  const tbody=document.getElementById('grades-backup-body');
+  if(!tbody) return;
+  tbody.innerHTML=`<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:24px">⏳ กำลังโหลด...</td></tr>`;
+  try{
+    const{data,error}=await sb.from('grade_backups').select('email,grades_data,updated_at').order('updated_at',{ascending:false});
+    if(error) throw error;
+    const rows=data||[];
+    if(!rows.length){
+      tbody.innerHTML=`<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:24px">ยังไม่มีข้อมูล backup</td></tr>`;
+      return;
+    }
+    tbody.innerHTML=rows.map(r=>{
+      const count=(r.grades_data||[]).length;
+      const updDate=r.updated_at?new Date(r.updated_at).toLocaleDateString('th-TH',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
+      const emailKey=r.email.replace(/'/g,"\\'");
+      return `<tr>
+        <td style="font-size:13px">${r.email}</td>
+        <td style="font-size:13px;text-align:center"><b>${count}</b> วิชา</td>
+        <td style="font-size:12px">${updDate}</td>
+        <td><button class="bsm" style="background:#fee2e2;color:#991b1b" onclick="deleteGradeBackup('${emailKey}')">🗑️ ลบ</button></td>
+      </tr>`;
+    }).join('');
+  }catch(e){
+    tbody.innerHTML=`<tr><td colspan="4" style="text-align:center;color:#e53e3e;padding:24px">เกิดข้อผิดพลาด: ${e.message}</td></tr>`;
+  }
+}
+async function deleteGradeBackup(email){
+  if(!confirm(`ลบ backup เกรดของ ${email} ทั้งหมดเลยใช่ไหม?`)) return;
+  try{
+    await sb.from('grade_backups').delete().eq('email',email);
+    loadGradeBackups();
+  }catch(e){ alert('ลบไม่สำเร็จ: '+e.message); }
+}
+
 async function removeAdmin(email){
   if(email==='kraten25ten@gmail.com'){ alert('ไม่สามารถลบ Superadmin ได้'); return; }
   if(!confirm('ยืนยันลบ Admin นี้?')) return;
