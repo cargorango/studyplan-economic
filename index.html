@@ -1146,7 +1146,8 @@ function checkExpiry(){
   const hoursLeft=msLeft/(1000*60*60);
   const daysLeft=msLeft/(1000*60*60*24);
 
-  if(hoursLeft<-24){
+  if(hoursLeft<-48){
+    // grace period 2 วันผ่านไปแล้ว — ปิดสิทธิ์ แต่ไม่ลบข้อมูลเกรด (hub_grades_email ยังอยู่ใน localStorage)
     S.subStatus='none'; S.subExpiry=null;
     localStorage.setItem('hub_sub','none');
     localStorage.removeItem('hub_sub_expiry');
