@@ -464,6 +464,7 @@ body{font-family:'Sarabun',sans-serif;color:#2d3748;min-height:100vh;overflow-x:
       <div class="admin-nav">
         <div class="a-nav active" id="nav-users" onclick="aNav('users')">👥 ผู้ใช้ทั้งหมด</div>
         <div class="a-nav" id="nav-slips" onclick="aNav('slips')">💳 สลิปรอตรวจ</div>
+        <div class="a-nav" id="nav-online" onclick="aNav('online');initOnlineSection()">🟢 ออนไลน์ตอนนี้</div>
         <div class="a-nav" id="nav-planner" onclick="aNav('planner');loadPlannerBackups()">📚 Backup แพลนเนอร์</div>
         <div class="a-nav hidden" id="nav-admins" onclick="aNav('admins')">🔑 จัดการ Admin</div>
       </div>
@@ -492,6 +493,27 @@ body{font-family:'Sarabun',sans-serif;color:#2d3748;min-height:100vh;overflow-x:
       <div class="a-section" id="sec-slips">
         <div class="tbl-head-bar" style="background:#fff;border-radius:12px 12px 0 0;border:1px solid #f3e8ff;border-bottom:none"><span>💳 สลิปที่ส่งมา</span><span id="slip-cnt" style="font-size:12px;color:#94a3b8"></span></div>
         <div id="slips-cards" style="display:flex;flex-direction:column;gap:14px;padding:4px 0 8px"></div>
+      </div>
+
+      <div class="a-section" id="sec-online">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+          <div>
+            <div style="font-weight:700;font-size:16px;color:#1a365d">🟢 ผู้ใช้ออนไลน์ตอนนี้</div>
+            <div style="font-size:12px;color:#94a3b8;margin-top:2px">อัปเดตทุก 15 วินาที · ออนไลน์ = ใช้งานใน 2 นาทีที่ผ่านมา</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:13px;color:#553c9a;font-weight:700" id="online-count">— คน</span>
+            <button class="bsm vi" onclick="fetchOnlineUsers()">🔄 รีเฟรช</button>
+          </div>
+        </div>
+        <div style="margin-bottom:16px">
+          <div style="font-size:12px;font-weight:700;color:#b7791f;background:#fefcbf;border:1px solid #f6e05e;border-radius:8px;padding:6px 12px;margin-bottom:10px;display:inline-block">⭐ สมาชิก Premium</div>
+          <div id="online-premium" style="display:flex;flex-wrap:wrap;gap:10px"><span style="color:#94a3b8;font-size:13px">ยังไม่มีข้อมูล</span></div>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#4a5568;background:#edf2f7;border-radius:8px;padding:6px 12px;margin-bottom:10px;display:inline-block">👤 ผู้ใช้ทั่วไป</div>
+          <div id="online-free" style="display:flex;flex-wrap:wrap;gap:10px"><span style="color:#94a3b8;font-size:13px">ยังไม่มีข้อมูล</span></div>
+        </div>
       </div>
 
       <div class="a-section" id="sec-planner">
@@ -988,6 +1010,42 @@ function showScreen(id){
   el.scrollTop=0;
   const gs=el.querySelector('.grade-scroll');
   if(gs) gs.scrollTop=0;
+  updatePresencePage(id);
+}
+
+// ══════════════════════════
+// USER PRESENCE / HEARTBEAT
+// ══════════════════════════
+let _heartbeatTimer=null;
+const PAGE_LABELS={'s-hero':'🏠 หน้าหลัก','s-grades':'📊 คำนวณเกรด','s-admin':'⚙️ Admin','s-admin-login':'⚙️ Admin'};
+function _pageLabel(id){ return PAGE_LABELS[id]||'🏠 หน้าหลัก'; }
+async function _upsertPresence(page){
+  if(!S.user) return;
+  try{
+    await sb.from('user_presence').upsert({
+      email:S.user.email, name:S.user.name,
+      sub_status:S.subStatus||'none',
+      last_seen:new Date().toISOString(),
+      current_page:page||'🏠 หน้าหลัก'
+    },{onConflict:'email'});
+  }catch(e){}
+}
+function updatePresencePage(screenId){
+  if(!S.user) return;
+  _upsertPresence(_pageLabel(screenId));
+}
+function startHeartbeat(){
+  clearInterval(_heartbeatTimer);
+  _upsertPresence(_pageLabel('s-hero'));
+  _heartbeatTimer=setInterval(()=>{
+    if(!S.user){ clearInterval(_heartbeatTimer); return; }
+    const active=document.querySelector('.screen.active');
+    _upsertPresence(_pageLabel(active?.id||'s-hero'));
+  },30000);
+}
+async function clearPresence(){
+  if(!S.user) return;
+  try{ await sb.from('user_presence').delete().eq('email',S.user.email); }catch(e){}
 }
 function goHero(){ showScreen('s-hero'); }
 
@@ -1128,7 +1186,7 @@ async function onGoogleLogin(res){
     }
     await sb.from('hub_users').upsert({email:S.user.email,name:S.user.name,last_login:new Date().toISOString()},{onConflict:'email'});
   }catch(e){ console.error(e); }
-  renderTopUser(); checkExpiry();
+  renderTopUser(); checkExpiry(); startHeartbeat();
   closeModal('m-login');
   if(S.pendingFeature){ const f=S.pendingFeature; S.pendingFeature=null; gotoFeature(f); }
 }
@@ -1143,6 +1201,8 @@ function mockLogin(){
 }
 
 function logout(){
+  clearPresence();
+  clearInterval(_heartbeatTimer);
   S.user=null; S.subStatus='none';
   localStorage.removeItem('hub_user'); localStorage.removeItem('hub_sub');
   renderTopUser(); goHero();
@@ -1431,6 +1491,58 @@ async function rejectSlip(id){
   renderAdmin();
 }
 function deleteSlip(id){ if(!confirm('ยืนยันลบสลิปนี้?')) return; SLIPS=SLIPS.filter(s=>s.id!==id); renderAdmin(); }
+// ══════════════════════════
+// ONLINE USERS (REALTIME)
+// ══════════════════════════
+let _onlineTimer=null;
+let _onlineChannel=null;
+function initOnlineSection(){
+  fetchOnlineUsers();
+  clearInterval(_onlineTimer);
+  _onlineTimer=setInterval(fetchOnlineUsers,15000);
+  if(_onlineChannel) return;
+  _onlineChannel=sb.channel('presence_rt')
+    .on('postgres_changes',{event:'*',schema:'public',table:'user_presence'},()=>fetchOnlineUsers())
+    .subscribe();
+}
+async function fetchOnlineUsers(){
+  try{
+    const cutoff=new Date(Date.now()-5*60*1000).toISOString();
+    const{data}=await sb.from('user_presence').select('*').gte('last_seen',cutoff).order('last_seen',{ascending:false});
+    renderOnlineUsers(data||[]);
+  }catch(e){ console.error('fetchOnlineUsers:',e); }
+}
+function renderOnlineUsers(data){
+  const now=Date.now();
+  const online=data.filter(u=>(now-new Date(u.last_seen).getTime())<2*60*1000);
+  const away=data.filter(u=>{const d=now-new Date(u.last_seen).getTime();return d>=2*60*1000&&d<5*60*1000;});
+  const all=[...online,...away];
+  const premium=all.filter(u=>u.sub_status==='active');
+  const free=all.filter(u=>u.sub_status!=='active');
+  document.getElementById('online-count').textContent=`${online.length} คนออนไลน์${away.length?` · ${away.length} คน away`:''}`;
+  const card=(u)=>{
+    const age=now-new Date(u.last_seen).getTime();
+    const isOn=age<2*60*1000;
+    const dot=isOn?'background:#48bb78':'background:#f6ad55';
+    const ago=age<60000?'เมื่อกี้':Math.floor(age/60000)+' นาทีที่แล้ว';
+    const av=(u.name||u.email||'?')[0].toUpperCase();
+    return `<div style="background:#fff;border-radius:12px;padding:12px 14px;box-shadow:0 2px 8px rgba(0,0,0,.07);border:1px solid #f3e8ff;min-width:190px;max-width:220px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">${av}</div>
+        <div style="min-width:0">
+          <div style="font-weight:700;font-size:13px;color:#1a365d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.name||'—'}</div>
+          <div style="font-size:11px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.email}</div>
+        </div>
+        <div style="width:9px;height:9px;border-radius:50%;${dot};flex-shrink:0;margin-left:auto"></div>
+      </div>
+      <div style="font-size:11.5px;color:#553c9a;background:#faf5ff;border-radius:6px;padding:3px 8px;margin-bottom:4px">${u.current_page||'—'}</div>
+      <div style="font-size:11px;color:#a0aec0">${ago}</div>
+    </div>`;
+  };
+  document.getElementById('online-premium').innerHTML=premium.length?premium.map(card).join(''):`<span style="color:#94a3b8;font-size:13px">ไม่มีสมาชิก Premium ออนไลน์</span>`;
+  document.getElementById('online-free').innerHTML=free.length?free.map(card).join(''):`<span style="color:#94a3b8;font-size:13px">ไม่มีผู้ใช้ทั่วไปออนไลน์</span>`;
+}
+
 async function loadPlannerBackups(){
   const tbody=document.getElementById('planner-body');
   if(!tbody) return;
