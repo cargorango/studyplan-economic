@@ -1909,7 +1909,7 @@ function editUser(id){
   document.getElementById('edit-gpa').value=u.gpa==='—'?'':u.gpa;
   openModal('m-edit-user');
 }
-function saveEditUser(){
+async function saveEditUser(){
   const id=parseInt(document.getElementById('edit-uid').value);
   const u=USERS.find(x=>x.id===id); if(!u) return;
   u.name=document.getElementById('edit-name').value.trim()||u.name;
@@ -1918,6 +1918,12 @@ function saveEditUser(){
   u.sub=document.getElementById('edit-sub').value;
   const gpa=document.getElementById('edit-gpa').value.trim();
   u.gpa=gpa||'—';
+  try{
+    await sb.from('hub_users').upsert({
+      email:u.email, name:u.name,
+      sub_status:u.sub==='active'?'active':u.sub==='pending'?'pending':'none',
+    },{onConflict:'email'});
+  }catch(e){ console.error('saveEditUser:',e); }
   closeModal('m-edit-user'); renderAdmin();
 }
 
