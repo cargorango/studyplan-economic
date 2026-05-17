@@ -1,9 +1,9 @@
-const CACHE = 'studyhub-v1';
+const CACHE = 'studyhub-v2';
 const ASSETS = [
-  '/Economic-subscription.planner/',
-  '/Economic-subscription.planner/index.html',
-  '/Economic-subscription.planner/planner.html',
-  '/Economic-subscription.planner/promptpay-qr.jpg'
+  '/',
+  '/index.html',
+  '/planner.html',
+  '/promptpay-qr.jpg'
 ];
 
 self.addEventListener('install', e => {
