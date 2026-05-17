@@ -542,6 +542,7 @@ input:checked+.feat-slider:before{transform:translateX(20px)}
             <div style="font-size:12px;color:#94a3b8;margin-top:2px">ผู้ใช้ที่สมัครสมาชิก Premium อยู่ในขณะนี้</div>
           </div>
           <button class="bsm vi" onclick="loadPremiumUsers()">🔄 รีเฟรช</button>
+          <button class="bsm ok" onclick="openAddPremiumModal()" style="background:#7c3aed;color:#fff">➕ เพิ่ม Premium</button>
         </div>
         <div id="premium-stats" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px"></div>
         <div class="tbl-wrap">
@@ -617,6 +618,34 @@ input:checked+.feat-slider:before{transform:translateX(20px)}
       </div>
 
     </div>
+  </div>
+</div>
+
+<!-- Add Premium Modal -->
+<div class="overlay hidden" id="m-add-premium">
+  <div class="modal" style="max-width:400px">
+    <div class="m-icon">💎</div>
+    <h2>เพิ่มลูกค้า Premium</h2>
+    <p style="font-size:13px;color:#64748b">กรอกอีเมลและระยะเวลา จะเปิดสิทธิ์ Premium ให้ทันที</p>
+    <div style="text-align:left;margin-bottom:12px">
+      <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:5px">อีเมลผู้ใช้</label>
+      <input id="ap-email" type="email" placeholder="example@gmail.com"
+        style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:14px;box-sizing:border-box;outline:none">
+    </div>
+    <div style="text-align:left;margin-bottom:16px">
+      <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:5px">ระยะเวลา (วัน)</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+        <button onclick="document.getElementById('ap-days').value=30" class="bsm vi">30 วัน</button>
+        <button onclick="document.getElementById('ap-days').value=60" class="bsm vi">60 วัน</button>
+        <button onclick="document.getElementById('ap-days').value=90" class="bsm vi">90 วัน</button>
+        <button onclick="document.getElementById('ap-days').value=365" class="bsm vi">1 ปี</button>
+      </div>
+      <input id="ap-days" type="number" placeholder="จำนวนวัน" value="30" min="1"
+        style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:14px;box-sizing:border-box;outline:none">
+    </div>
+    <div id="ap-err" style="display:none;color:#e53e3e;font-size:13px;margin-bottom:10px;background:#fff5f5;padding:8px 12px;border-radius:8px"></div>
+    <button class="btn-pri" onclick="addPremiumDirect()" id="ap-btn">💎 เปิดสิทธิ์ Premium</button>
+    <button class="btn-can" onclick="closeModal('m-add-premium')">ยกเลิก</button>
   </div>
 </div>
 
@@ -1816,6 +1845,47 @@ async function revokePremiumDirect(email){
     await sb.from('hub_users').update({sub_status:'none',sub_expiry:null}).eq('email',email);
     loadPremiumUsers();
   }catch(e){ alert('เกิดข้อผิดพลาด: '+e.message); }
+}
+function openAddPremiumModal(){
+  document.getElementById('ap-email').value='';
+  document.getElementById('ap-days').value='30';
+  document.getElementById('ap-err').style.display='none';
+  document.getElementById('ap-btn').disabled=false;
+  document.getElementById('ap-btn').textContent='💎 เปิดสิทธิ์ Premium';
+  document.getElementById('m-add-premium').classList.remove('hidden');
+}
+async function addPremiumDirect(){
+  const email = document.getElementById('ap-email').value.trim().toLowerCase();
+  const days  = parseInt(document.getElementById('ap-days').value)||0;
+  const errEl = document.getElementById('ap-err');
+  const btn   = document.getElementById('ap-btn');
+  errEl.style.display='none';
+  if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    errEl.textContent='กรุณากรอกอีเมลให้ถูกต้อง'; errEl.style.display='block'; return;
+  }
+  if(days<1){ errEl.textContent='ระยะเวลาต้องมากกว่า 0 วัน'; errEl.style.display='block'; return; }
+  btn.disabled=true; btn.textContent='⏳ กำลังบันทึก...';
+  try{
+    const expiry = new Date();
+    expiry.setDate(expiry.getDate()+days);
+    const expiryStr = expiry.toISOString().split('T')[0];
+    const{data:existing}=await sb.from('hub_users').select('email,name').eq('email',email).maybeSingle();
+    await sb.from('hub_users').upsert({
+      email,
+      name: existing?.name || email.split('@')[0],
+      sub_status:'active',
+      sub_expiry: expiryStr,
+      join: existing ? undefined : new Date().toISOString().split('T')[0],
+    },{onConflict:'email',ignoreDuplicates:false});
+    closeModal('m-add-premium');
+    loadPremiumUsers();
+    showFeatToast(`เปิดสิทธิ์ Premium ให้ ${email} แล้ว (${days} วัน) ✅`);
+  }catch(e){
+    errEl.textContent='เกิดข้อผิดพลาด: '+e.message;
+    errEl.style.display='block';
+    btn.disabled=false;
+    btn.textContent='💎 เปิดสิทธิ์ Premium';
+  }
 }
 
 // ══════════════════════════
