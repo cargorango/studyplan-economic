@@ -1,0 +1,37 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 512 512'>
+  <defs>
+    <linearGradient id='bg' x1='0%' y1='0%' x2='100%' y2='100%'>
+      <stop offset='0%' stop-color='#f3e8ff'/>
+      <stop offset='100%' stop-color='#fce7f3'/>
+    </linearGradient>
+    <linearGradient id='accent' x1='0%' y1='0%' x2='100%' y2='100%'>
+      <stop offset='0%' stop-color='#a78bfa'/>
+      <stop offset='100%' stop-color='#f472b6'/>
+    </linearGradient>
+  </defs>
+
+  <!-- background rounded rect -->
+  <rect width='512' height='512' rx='115' ry='115' fill='url(#bg)'/>
+
+  <!-- soft circle glow behind -->
+  <circle cx='256' cy='230' r='155' fill='white' opacity='0.45'/>
+
+  <!-- open book shape -->
+  <path d='M256 170 Q180 178 140 198 L140 340 Q180 320 256 318 Q332 320 372 340 L372 198 Q332 178 256 170 Z' fill='url(#accent)' opacity='0.18'/>
+  <path d='M256 170 Q180 178 140 198 L140 340 Q180 320 256 318 L256 170 Z' fill='url(#accent)' opacity='0.7'/>
+  <path d='M256 170 Q332 178 372 198 L372 340 Q332 320 256 318 L256 170 Z' fill='url(#accent)' opacity='0.45'/>
+  <!-- spine -->
+  <line x1='256' y1='170' x2='256' y2='318' stroke='white' stroke-width='8' stroke-linecap='round' opacity='0.8'/>
+
+  <!-- star above book -->
+  <polygon points='256,98 263,118 284,118 268,130 274,150 256,139 238,150 244,130 228,118 249,118' fill='url(#accent)' opacity='0.9'/>
+
+  <!-- decorative dots -->
+  <circle cx='148' cy='148' r='10' fill='#c4b5fd' opacity='0.6'/>
+  <circle cx='364' cy='380' r='7' fill='#f9a8d4' opacity='0.7'/>
+  <circle cx='385' cy='155' r='6' fill='#c4b5fd' opacity='0.5'/>
+  <circle cx='130' cy='365' r='8' fill='#f9a8d4' opacity='0.5'/>
+
+  <!-- SH text -->
+  <text x='256' y='420' font-family='Arial Black,Arial,sans-serif' font-weight='900' font-size='72' fill='url(#accent)' text-anchor='middle' opacity='0.85'>StudyHub</text>
+</svg>
