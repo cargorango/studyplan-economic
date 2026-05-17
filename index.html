@@ -260,6 +260,21 @@ body{font-family:'Sarabun',sans-serif;color:#2d3748;min-height:100vh;overflow-x:
 .admin-content{flex:1;padding:26px;overflow-y:auto}
 .a-section{display:none}
 .a-section.active{display:block}
+.feat-mgmt-cards{display:flex;flex-direction:column;gap:14px}
+.feat-mgmt-card{background:#fff;border-radius:12px;padding:18px 22px;box-shadow:0 2px 8px rgba(102,126,234,.12);border:1px solid #f3e8ff;display:flex;align-items:center;gap:16px}
+.feat-mgmt-icon{font-size:28px;width:44px;text-align:center}
+.feat-mgmt-info{flex:1}
+.feat-mgmt-name{font-weight:700;font-size:15px;color:#1a365d}
+.feat-mgmt-desc{font-size:12px;color:#94a3b8;margin-top:3px}
+.feat-mgmt-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;display:inline-block;margin-top:5px}
+.feat-mgmt-badge.free{background:#dcfce7;color:#166534;border:1px solid #bbf7d0}
+.feat-mgmt-badge.pro{background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd}
+.feat-toggle{position:relative;display:inline-block;width:46px;height:26px;flex-shrink:0}
+.feat-toggle input{opacity:0;width:0;height:0}
+.feat-slider{position:absolute;cursor:pointer;inset:0;background:#cbd5e0;border-radius:26px;transition:.3s}
+.feat-slider:before{position:absolute;content:"";height:20px;width:20px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
+input:checked+.feat-slider{background:#7c3aed}
+input:checked+.feat-slider:before{transform:translateX(20px)}
 .stat-row{display:flex;gap:12px;margin-bottom:22px;flex-wrap:wrap}
 .stat-c{background:#fff;border-radius:12px;padding:16px 18px;flex:1;min-width:120px;box-shadow:0 2px 8px rgba(102,126,234,.12);border:1px solid #f3e8ff}
 .stat-n{font-size:28px;font-weight:700;color:#553c9a}
@@ -369,25 +384,32 @@ body{font-family:'Sarabun',sans-serif;color:#2d3748;min-height:100vh;overflow-x:
     </div>
 
     <div class="feature-cards">
-      <div class="feat-card" onclick="gotoFeature('planner')">
+      <div class="feat-card" id="fc-planner" onclick="gotoFeature('planner')">
         <div class="fc-icon">📅</div>
         <div class="fc-badge free">FREE</div>
         <div class="fc-title" id="fc1-title-el">วางแผนการเรียน</div>
         <div class="fc-desc" id="fc1-desc-el">จัดตารางวิชาทั้ง 4 ปี ติดตามหน่วยกิตและสถานะแต่ละวิชา</div>
         <div class="fc-arrow">→</div>
       </div>
-      <div class="feat-card" onclick="gotoFeature('grades')">
+      <div class="feat-card" id="fc-grades" onclick="gotoFeature('grades')">
         <div class="fc-icon">🧮</div>
         <div class="fc-badge pro">19฿/เดือน</div>
         <div class="fc-title" id="fc2-title-el">คำนวณเกรด</div>
         <div class="fc-desc" id="fc2-desc-el">กรอกคะแนนแต่ละองค์ประกอบ คำนวณเกรดอัตโนมัติ วางแผนว่าจะดรอปหรือสู้ต่อ</div>
         <div class="fc-arrow">→</div>
       </div>
-      <div class="feat-card" onclick="window.open('https://me-clip-cmu-course-review.vercel.app/?lang=th','_blank')">
+      <div class="feat-card" id="fc-review" onclick="window.open('https://me-clip-cmu-course-review.vercel.app/?lang=th','_blank')">
         <div class="fc-icon">⭐</div>
         <div class="fc-badge free">FREE</div>
         <div class="fc-title">รีวิววิชาเรียนครบทุกวิชาในมช.</div>
         <div class="fc-desc">อ่านรีวิวจากรุ่นพี่ ก่อนเลือกลงวิชา ครอบคลุมทุกคณะในมหาวิทยาลัยเชียงใหม่</div>
+        <div class="fc-arrow">→</div>
+      </div>
+      <div class="feat-card" id="fc-daily" onclick="gotoFeature('daily-planner')">
+        <div class="fc-icon">🗓️</div>
+        <div class="fc-badge free">FREE</div>
+        <div class="fc-title">Daily Planner</div>
+        <div class="fc-desc">จดงาน วางแผนรายวัน พร้อมวันหยุดไทย บันทึกโน้ตแต่ละวัน</div>
         <div class="fc-arrow">→</div>
       </div>
     </div>
@@ -396,6 +418,17 @@ body{font-family:'Sarabun',sans-serif;color:#2d3748;min-height:100vh;overflow-x:
   </div>
 </div>
 
+
+<!-- ═══════ DAILY PLANNER ═══════ -->
+<div class="screen" id="s-daily-planner">
+  <div style="display:flex;flex-direction:column;height:100vh">
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 16px;background:#fff;border-bottom:1px solid #e9d5ff;flex-shrink:0">
+      <button onclick="goHero()" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:20px;padding:7px 16px;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:700;cursor:pointer">← กลับ</button>
+      <span style="font-size:14px;font-weight:700;color:#553c9a">🗓️ Daily Planner</span>
+    </div>
+    <iframe src="../todolist-planner/dist/index.html" style="flex:1;border:none;width:100%" title="Daily Planner"></iframe>
+  </div>
+</div>
 
 <!-- ═══════ GRADES ═══════ -->
 <div class="screen" id="s-grades">
@@ -472,6 +505,7 @@ body{font-family:'Sarabun',sans-serif;color:#2d3748;min-height:100vh;overflow-x:
         <div class="a-nav" id="nav-online" onclick="aNav('online');initOnlineSection()">🟢 ออนไลน์ตอนนี้</div>
         <div class="a-nav" id="nav-planner" onclick="aNav('planner');loadPlannerBackups()">📚 Backup แพลนเนอร์</div>
         <div class="a-nav" id="nav-grades" onclick="aNav('grades');loadGradeBackups()">📊 Backup เกรด</div>
+        <div class="a-nav" id="nav-features" onclick="aNav('features');renderFeatureAdmin()">🔧 จัดการฟีเจอร์</div>
         <div class="a-nav hidden" id="nav-admins" onclick="aNav('admins')">🔑 จัดการ Admin</div>
       </div>
       <div class="admin-foot">
@@ -560,6 +594,14 @@ body{font-family:'Sarabun',sans-serif;color:#2d3748;min-height:100vh;overflow-x:
             <th>อีเมล</th><th>จำนวนวิชา</th><th>อัปเดตล่าสุด</th><th>การจัดการ</th>
           </tr></thead><tbody id="grades-backup-body"><tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:24px">กดรีเฟรชเพื่อโหลดข้อมูล</td></tr></tbody></table>
         </div>
+      </div>
+
+      <div class="a-section" id="sec-features">
+        <div class="tbl-head-bar" style="background:#fff;border-radius:12px 12px 0 0;border:1px solid #f3e8ff;border-bottom:none">
+          <span>🔧 จัดการฟีเจอร์</span>
+          <span style="font-size:12px;color:#94a3b8">เปิด/ปิดการแสดงฟีเจอร์ในหน้าหลัก</span>
+        </div>
+        <div class="feat-mgmt-cards" id="feat-cards-admin" style="padding:14px 0 8px"></div>
       </div>
 
       <div class="a-section" id="sec-admins">
@@ -1036,7 +1078,11 @@ function onGlobalFChange(){
 // ══════════════════════════
 let USERS=[];
 let SLIPS=[];
-const SUPERADMIN={email:'kraten25ten@gmail.com', name:'Kraten (Owner)', role:'superadmin'};
+// ── Security Config — แก้ไขได้ที่นี่ ──────────
+const SUPERADMIN_EMAIL = 'kraten25ten@gmail.com';
+const PROMPTPAY_NUMBER  = '0902935084';
+// ────────────────────────────────────────────────
+const SUPERADMIN={email:SUPERADMIN_EMAIL, name:'Kraten (Owner)', role:'superadmin'};
 let ADMINS=[SUPERADMIN];
 let PLANNER_DATA=[];
 const CREDS={};
@@ -1113,6 +1159,8 @@ function gotoFeature(f){
   } else if(f==='grades'){
     if(!S.user){ S.pendingFeature='grades'; openModal('m-login'); return; }
     showScreen('s-grades'); refreshGate();
+  } else if(f==='daily-planner'){
+    showScreen('s-daily-planner');
   }
 }
 
@@ -1306,15 +1354,6 @@ async function onGoogleLogin(res){
   if(S.pendingFeature){ const f=S.pendingFeature; S.pendingFeature=null; gotoFeature(f); }
 }
 
-function mockLogin(){
-  const adm=ADMINS.find(a=>a.email==='kraten25ten@gmail.com');
-  S.user={email:'kraten25ten@gmail.com',name:adm?adm.name:'kraten',av:'K'};
-  localStorage.setItem('hub_user',JSON.stringify(S.user));
-  renderTopUser();
-  closeModal('m-login');
-  if(S.pendingFeature){ const f=S.pendingFeature; S.pendingFeature=null; gotoFeature(f); }
-}
-
 function logout(){
   clearPresence();
   clearInterval(_heartbeatTimer);
@@ -1346,7 +1385,7 @@ function openPayment(){
   openModal('m-payment');
 }
 function copyPP(){
-  navigator.clipboard?.writeText('0902935084').then(()=>{
+  navigator.clipboard?.writeText(PROMPTPAY_NUMBER).then(()=>{
     const b=document.querySelector('.pp-copy');
     b.textContent='คัดลอกแล้ว ✓';
     setTimeout(()=>b.textContent='คัดลอก',2000);
@@ -1454,7 +1493,7 @@ function viewSlipImg(id){
 async function goAdmin(){
   await loadAdminsFromDB();
   if(S.adminUser){ await loadStoredSlips(); renderAdmin(); showScreen('s-admin'); return; }
-  const savedEmail=localStorage.getItem('hub_admin_session');
+  const savedEmail=sessionStorage.getItem('hub_admin_session');
   if(savedEmail){
     const adm=ADMINS.find(a=>a.email===savedEmail);
     if(adm){
@@ -1482,18 +1521,79 @@ async function adminLogin(){
   if(!adm||CREDS[email]!==pw){ err.style.display='block'; return; }
   err.style.display='none';
   S.adminUser=adm;
-  localStorage.setItem('hub_admin_session',email);
+  sessionStorage.setItem('hub_admin_session',email);
   document.getElementById('role-lbl').textContent=`${adm.name} · ${adm.role}`;
   document.getElementById('nav-admins').classList.toggle('hidden', adm.role!=='superadmin');
   loadStoredSlips().then(()=>{ renderAdmin(); showScreen('s-admin'); });
 }
-function adminLogout(){ S.adminUser=null; localStorage.removeItem('hub_admin_session'); showScreen('s-admin-login'); }
+function adminLogout(){ S.adminUser=null; sessionStorage.removeItem('hub_admin_session'); showScreen('s-admin-login'); }
 function aNav(sec){
   document.querySelectorAll('.a-nav').forEach(n=>n.classList.remove('active'));
   document.querySelectorAll('.a-section').forEach(s=>s.classList.remove('active'));
   document.getElementById('nav-'+sec).classList.add('active');
   document.getElementById('sec-'+sec).classList.add('active');
 }
+
+/* ───── Feature visibility management ───── */
+const FEATURE_LIST = [
+  { id:'planner', icon:'📅', name:'วางแผนการเรียน',              badge:'free', badgeText:'FREE' },
+  { id:'grades',  icon:'🧮', name:'คำนวณเกรด',                   badge:'pro',  badgeText:'19฿/เดือน' },
+  { id:'review',  icon:'⭐', name:'รีวิววิชาเรียนครบทุกวิชาในมช.', badge:'free', badgeText:'FREE' },
+  { id:'daily',   icon:'🗓️', name:'Daily Planner',               badge:'free', badgeText:'FREE' },
+];
+function loadFeatureVis(){
+  try{ return JSON.parse(localStorage.getItem('hub_feature_vis')||'{}'); }catch(e){ return {}; }
+}
+function saveFeatureVis(vis){ localStorage.setItem('hub_feature_vis', JSON.stringify(vis)); }
+function getFeatureOn(id){
+  const vis = loadFeatureVis();
+  return vis[id] !== undefined ? vis[id] : true;
+}
+function applyFeatureVisibility(){
+  FEATURE_LIST.forEach(f=>{
+    const el = document.getElementById('fc-'+f.id);
+    if(el) el.style.display = getFeatureOn(f.id) ? '' : 'none';
+  });
+}
+function renderFeatureAdmin(){
+  const container = document.getElementById('feat-cards-admin');
+  if(!container) return;
+  container.innerHTML = FEATURE_LIST.map(f=>`
+    <div class="feat-mgmt-card">
+      <div class="feat-mgmt-icon">${f.icon}</div>
+      <div class="feat-mgmt-info">
+        <div class="feat-mgmt-name">${f.name}</div>
+        <span class="feat-mgmt-badge ${f.badge}">${f.badgeText}</span>
+      </div>
+      <label class="feat-toggle">
+        <input type="checkbox" ${getFeatureOn(f.id)?'checked':''} onchange="toggleFeature('${f.id}',this.checked)">
+        <span class="feat-slider"></span>
+      </label>
+    </div>
+  `).join('');
+}
+function toggleFeature(id, on){
+  const vis = loadFeatureVis();
+  vis[id] = on;
+  saveFeatureVis(vis);
+  applyFeatureVisibility();
+  const name = FEATURE_LIST.find(f=>f.id===id)?.name||id;
+  showFeatToast(`${name}: ${on?'เปิดแสดงแล้ว ✅':'ซ่อนแล้ว ✅'}`);
+}
+function showFeatToast(msg){
+  let t = document.getElementById('feat-toast');
+  if(!t){
+    t = document.createElement('div');
+    t.id = 'feat-toast';
+    t.style.cssText='position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#553c9a;color:#fff;padding:10px 22px;border-radius:20px;font-size:14px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.2);transition:opacity .3s';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>{ t.style.opacity='0'; }, 2500);
+}
+
 function renderAdmin(){
   const active=USERS.filter(u=>u.sub==='active').length;
   const pend=SLIPS.filter(s=>s.status==='pending').length;
@@ -1892,7 +1992,7 @@ async function deleteGradeBackup(email){
 }
 
 async function removeAdmin(email){
-  if(email==='kraten25ten@gmail.com'){ alert('ไม่สามารถลบ Superadmin ได้'); return; }
+  if(email===SUPERADMIN_EMAIL){ alert('ไม่สามารถลบ Superadmin ได้'); return; }
   if(!confirm('ยืนยันลบ Admin นี้?')) return;
   try{
     await sb.from('hub_admins').delete().eq('email',email);
@@ -2021,6 +2121,7 @@ checkExpiry();
     renderTopUser(); checkExpiry();
   }catch(e){ console.error(e); }
 })();
+applyFeatureVisibility();
 (function(){
   const go = sessionStorage.getItem('hub_goto');
   if(!go) return;
