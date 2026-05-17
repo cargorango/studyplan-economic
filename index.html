@@ -373,7 +373,7 @@ input:checked+.feat-slider:before{transform:translateX(20px)}
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
           <span style="font-size:15px">⭐</span>
           <span id="nb2-title-el" style="font-weight:700;font-size:14px;color:#4a3f6b">โปรแกรมบันทึกคะแนนคำนวณเกรด</span>
-          <span style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px">Premium 19฿/เดือน</span>
+          <span style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px">Premium 39฿/เดือน</span>
         </div>
         <div id="nb2-body-el" style="font-size:12.5px;color:#7c6b9e;line-height:1.75;padding-left:22px">
           มากำหนดอนาคตตัวเองด้วยตัวเราเอง<br>
@@ -393,7 +393,7 @@ input:checked+.feat-slider:before{transform:translateX(20px)}
       </div>
       <div class="feat-card" id="fc-grades" onclick="gotoFeature('grades')">
         <div class="fc-icon">🧮</div>
-        <div class="fc-badge pro">19฿/เดือน</div>
+        <div class="fc-badge pro">39฿/เดือน</div>
         <div class="fc-title" id="fc2-title-el">คำนวณเกรด</div>
         <div class="fc-desc" id="fc2-desc-el">กรอกคะแนนแต่ละองค์ประกอบ คำนวณเกรดอัตโนมัติ วางแผนว่าจะดรอปหรือสู้ต่อ</div>
         <div class="fc-arrow">→</div>
@@ -506,6 +506,7 @@ input:checked+.feat-slider:before{transform:translateX(20px)}
         <div class="a-nav" id="nav-planner" onclick="aNav('planner');loadPlannerBackups()">📚 Backup แพลนเนอร์</div>
         <div class="a-nav" id="nav-grades" onclick="aNav('grades');loadGradeBackups()">📊 Backup เกรด</div>
         <div class="a-nav" id="nav-features" onclick="aNav('features');renderFeatureAdmin()">🔧 จัดการฟีเจอร์</div>
+        <div class="a-nav" id="nav-popup" onclick="aNav('popup');renderPopupAdmin()">📢 Popup โฆษณา</div>
         <div class="a-nav hidden" id="nav-admins" onclick="aNav('admins')">🔑 จัดการ Admin</div>
       </div>
       <div class="admin-foot">
@@ -597,6 +598,62 @@ input:checked+.feat-slider:before{transform:translateX(20px)}
         </div>
       </div>
 
+      <div class="a-section" id="sec-popup">
+        <div class="tbl-wrap" style="padding:22px">
+          <div class="tbl-head-bar" style="border-bottom:1px solid #f0f4f8;margin:-22px -22px 20px;padding:14px 22px">
+            <span>📢 Popup โฆษณา</span>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:13px;color:#718096">เปิด Popup:</span>
+              <label class="feat-toggle">
+                <input type="checkbox" id="popup-enabled-toggle" onchange="togglePopupEnabled(this.checked)">
+                <span class="feat-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start" id="popup-editor">
+            <!-- left: settings -->
+            <div>
+              <div style="margin-bottom:14px">
+                <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px">อัพโหลดรูปภาพ</label>
+                <input type="file" id="popup-file" accept="image/*" style="display:none" onchange="handlePopupImage(event)">
+                <button onclick="document.getElementById('popup-file').click()" class="bsm vi" style="width:100%;padding:12px;font-size:13px">📁 เลือกรูปจากเครื่อง</button>
+              </div>
+              <div style="margin-bottom:14px">
+                <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px">หรือวาง URL รูปภาพ</label>
+                <input id="popup-url" type="url" placeholder="https://..." oninput="previewPopupUrl()"
+                  style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:13px;box-sizing:border-box">
+              </div>
+              <div style="margin-bottom:14px">
+                <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px">ลิงก์เมื่อกดรูป (ไม่บังคับ)</label>
+                <input id="popup-link" type="url" placeholder="https://..."
+                  style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:13px;box-sizing:border-box">
+              </div>
+              <div style="margin-bottom:14px">
+                <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px">แสดง Popup</label>
+                <select id="popup-freq" style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:13px">
+                  <option value="once_session">ครั้งเดียวต่อ session</option>
+                  <option value="once_day">ครั้งเดียวต่อวัน</option>
+                  <option value="always">ทุกครั้งที่เปิดแอป</option>
+                </select>
+              </div>
+              <button onclick="savePopupConfig()" class="btn-pri" style="width:100%">💾 บันทึก Popup</button>
+              <button onclick="clearPopupConfig()" class="bsm no" style="width:100%;margin-top:8px;padding:10px">🗑 ลบ Popup</button>
+            </div>
+            <!-- right: preview -->
+            <div>
+              <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px">Preview</div>
+              <div id="popup-preview-wrap" style="background:#f7fafc;border-radius:12px;border:2px dashed #e2e8f0;min-height:200px;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative">
+                <span id="popup-preview-empty" style="color:#94a3b8;font-size:13px">ยังไม่มีรูป</span>
+                <img id="popup-preview-img" src="" alt="" style="display:none;max-width:100%;border-radius:10px">
+                <div style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.5);color:#fff;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700">✕</div>
+              </div>
+              <div style="font-size:11px;color:#94a3b8;margin-top:6px;text-align:center">นี่คือลักษณะที่ user จะเห็น</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="a-section" id="sec-features">
         <div class="tbl-head-bar" style="background:#fff;border-radius:12px 12px 0 0;border:1px solid #f3e8ff;border-bottom:none">
           <span>🔧 จัดการฟีเจอร์</span>
@@ -617,6 +674,16 @@ input:checked+.feat-slider:before{transform:translateX(20px)}
         </div>
       </div>
 
+    </div>
+  </div>
+</div>
+
+<!-- Popup Ad Modal (shown to users) -->
+<div class="overlay hidden" id="m-popup-ad" style="z-index:10000;background:rgba(0,0,0,.6)">
+  <div style="position:relative;max-width:420px;width:90%;margin:auto">
+    <button onclick="closePopupAd()" style="position:absolute;top:-14px;right:-14px;z-index:2;background:#fff;border:none;border-radius:50%;width:32px;height:32px;font-size:18px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2);line-height:1;color:#374151">✕</button>
+    <div id="popup-ad-content" style="border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.3)">
+      <img id="popup-ad-img" src="" alt="" style="width:100%;display:block;cursor:pointer" onclick="handlePopupAdClick()">
     </div>
   </div>
 </div>
@@ -688,7 +755,7 @@ input:checked+.feat-slider:before{transform:translateX(20px)}
       <div style="width:180px;height:180px;overflow:hidden;border-radius:12px;margin:8px auto;box-shadow:0 2px 8px rgba(0,0,0,.15)">
         <img src="./promptpay-qr.jpg" alt="QR PromptPay" style="width:180px;height:auto;margin-top:-75px;display:block">
       </div>
-      <div class="pp-amt">ยอดชำระ: <strong>19 บาท / เดือน</strong></div>
+      <div class="pp-amt">ยอดชำระ: <strong>39 บาท / เดือน</strong></div>
     </div>
     <input type="file" id="slip-file" accept="image/*" onchange="previewSlip(event)" style="display:none">
     <img id="slip-img" class="hidden" alt="" style="width:100%;border-radius:10px;margin-bottom:10px;max-height:180px;object-fit:contain">
@@ -1566,7 +1633,7 @@ function aNav(sec){
 /* ───── Feature visibility management ───── */
 const FEATURE_LIST = [
   { id:'planner', icon:'📅', name:'วางแผนการเรียน',              badge:'free', badgeText:'FREE' },
-  { id:'grades',  icon:'🧮', name:'คำนวณเกรด',                   badge:'pro',  badgeText:'19฿/เดือน' },
+  { id:'grades',  icon:'🧮', name:'คำนวณเกรด',                   badge:'pro',  badgeText:'39฿/เดือน' },
   { id:'review',  icon:'⭐', name:'รีวิววิชาเรียนครบทุกวิชาในมช.', badge:'free', badgeText:'FREE' },
   { id:'daily',   icon:'🗓️', name:'Daily Planner',               badge:'free', badgeText:'FREE' },
 ];
@@ -1675,6 +1742,102 @@ function showFeatToast(msg){
   t.style.opacity = '1';
   clearTimeout(t._timer);
   t._timer = setTimeout(()=>{ t.style.opacity='0'; }, 2500);
+}
+
+/* ───── Popup Ad management ───── */
+function loadPopupConfig(){
+  try{ return JSON.parse(localStorage.getItem('hub_popup_cfg')||'null'); }catch(e){ return null; }
+}
+function savePopupConfig(){
+  const imgEl = document.getElementById('popup-preview-img');
+  const imageData = imgEl.src && imgEl.style.display!=='none' ? imgEl.src : '';
+  if(!imageData){ showFeatToast('กรุณาเลือกรูปก่อน'); return; }
+  const cfg = {
+    enabled: document.getElementById('popup-enabled-toggle').checked,
+    imageData,
+    link: document.getElementById('popup-link').value.trim(),
+    freq: document.getElementById('popup-freq').value,
+  };
+  localStorage.setItem('hub_popup_cfg', JSON.stringify(cfg));
+  showFeatToast('บันทึก Popup แล้ว ✅');
+}
+function clearPopupConfig(){
+  if(!confirm('ลบ Popup ทั้งหมดใช่ไหม?')) return;
+  localStorage.removeItem('hub_popup_cfg');
+  localStorage.removeItem('hub_popup_shown');
+  renderPopupAdmin();
+  showFeatToast('ลบ Popup แล้ว ✅');
+}
+function togglePopupEnabled(on){
+  const cfg = loadPopupConfig();
+  if(cfg){ cfg.enabled=on; localStorage.setItem('hub_popup_cfg',JSON.stringify(cfg)); }
+  showFeatToast(on ? 'เปิด Popup แล้ว ✅' : 'ปิด Popup แล้ว ✅');
+}
+function handlePopupImage(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = document.getElementById('popup-preview-img');
+    const empty = document.getElementById('popup-preview-empty');
+    img.src = ev.target.result;
+    img.style.display = 'block';
+    empty.style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+function previewPopupUrl(){
+  const url = document.getElementById('popup-url').value.trim();
+  if(!url) return;
+  const img = document.getElementById('popup-preview-img');
+  const empty = document.getElementById('popup-preview-empty');
+  img.src = url;
+  img.style.display = 'block';
+  empty.style.display = 'none';
+}
+function renderPopupAdmin(){
+  const cfg = loadPopupConfig();
+  const toggle = document.getElementById('popup-enabled-toggle');
+  const freq = document.getElementById('popup-freq');
+  const link = document.getElementById('popup-link');
+  if(toggle) toggle.checked = cfg?.enabled || false;
+  if(freq && cfg?.freq) freq.value = cfg.freq;
+  if(link && cfg?.link) link.value = cfg.link;
+  if(cfg?.imageData){
+    const img = document.getElementById('popup-preview-img');
+    const empty = document.getElementById('popup-preview-empty');
+    if(img){ img.src=cfg.imageData; img.style.display='block'; }
+    if(empty) empty.style.display='none';
+  }
+}
+function shouldShowPopup(cfg){
+  if(!cfg || !cfg.enabled || !cfg.imageData) return false;
+  const key = 'hub_popup_shown';
+  const freq = cfg.freq || 'once_session';
+  if(freq==='always') return true;
+  const last = localStorage.getItem(key);
+  if(!last) return true;
+  if(freq==='once_session') return false;
+  if(freq==='once_day'){
+    const lastDate = new Date(parseInt(last)).toDateString();
+    return lastDate !== new Date().toDateString();
+  }
+  return false;
+}
+function showPopupAd(){
+  const cfg = loadPopupConfig();
+  if(!shouldShowPopup(cfg)) return;
+  const img = document.getElementById('popup-ad-img');
+  if(img) img.src = cfg.imageData;
+  document.getElementById('m-popup-ad').classList.remove('hidden');
+  localStorage.setItem('hub_popup_shown', Date.now().toString());
+}
+function closePopupAd(){
+  document.getElementById('m-popup-ad').classList.add('hidden');
+}
+function handlePopupAdClick(){
+  const cfg = loadPopupConfig();
+  if(cfg?.link) window.open(cfg.link, '_blank');
 }
 
 function renderAdmin(){
@@ -2246,6 +2409,7 @@ checkExpiry();
   }catch(e){ console.error(e); }
 })();
 applyFeatureVisibility();
+setTimeout(showPopupAd, 800);
 (function(){
   const go = sessionStorage.getItem('hub_goto');
   if(!go) return;
