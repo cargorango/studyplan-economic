@@ -682,35 +682,60 @@ input:checked+.feat-slider:before{transform:translateX(20px)}
   </div>
 </div>
 
-<!-- Premium Info Modal -->
+<!-- Premium Info Modal (2-step) -->
 <div class="overlay hidden" id="m-premium-info">
-  <div class="modal" style="max-width:460px;padding:0;overflow:hidden">
-    <!-- header -->
-    <div style="background:linear-gradient(135deg,#7c3aed,#ec4899);padding:26px 24px 20px;text-align:center">
-      <div style="font-size:36px;margin-bottom:8px">💎</div>
-      <div style="font-size:20px;font-weight:800;color:#fff;margin-bottom:4px">StudyHub Premium</div>
-      <div style="font-size:13px;color:rgba(255,255,255,.85)">เพียง <strong>39 บาท / เดือน</strong> · ปลดล็อคทุกฟีเจอร์</div>
-    </div>
-    <!-- features list -->
-    <div style="padding:20px 24px 0">
-      <div style="font-size:13px;font-weight:700;color:#553c9a;margin-bottom:12px;text-align:center">✨ สิทธิ์ที่คุณจะได้รับ</div>
-      <div id="premium-info-features" style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px"></div>
-    </div>
-    <!-- QR + slip -->
-    <div style="padding:0 24px 24px">
-      <div style="background:#f9f5ff;border-radius:12px;padding:16px;text-align:center;margin-bottom:14px">
-        <div style="font-size:12px;font-weight:700;color:#7c3aed;margin-bottom:8px">สแกน QR พร้อมเพย์</div>
-        <div style="width:150px;height:150px;overflow:hidden;border-radius:10px;margin:0 auto 8px;box-shadow:0 2px 8px rgba(0,0,0,.12)">
-          <img src="./promptpay-qr.jpg" alt="QR" style="width:150px;height:auto;margin-top:-60px;display:block">
-        </div>
-        <div style="font-size:13px;color:#553c9a;font-weight:700">39 บาท / เดือน</div>
+  <div class="modal" style="max-width:480px;padding:0;overflow:hidden">
+
+    <!-- STEP 1: comparison -->
+    <div id="pi-step1">
+      <div style="background:linear-gradient(135deg,#7c3aed,#ec4899);padding:24px 24px 18px;text-align:center">
+        <div style="font-size:34px;margin-bottom:6px">💎</div>
+        <div style="font-size:19px;font-weight:800;color:#fff;margin-bottom:3px">StudyHub Premium</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.85)">เพียง <strong>39 บาท / เดือน</strong> · ปลดล็อคทุกฟีเจอร์</div>
       </div>
-      <input type="file" id="pi-slip-file" accept="image/*" onchange="previewPiSlip(event)" style="display:none">
-      <img id="pi-slip-img" style="display:none;width:100%;border-radius:10px;margin-bottom:10px;max-height:160px;object-fit:contain" alt="">
-      <button onclick="document.getElementById('pi-slip-file').click()" style="width:100%;padding:12px;background:linear-gradient(135deg,#f472b6,#fb923c);color:#fff;border:none;border-radius:10px;font-family:'Sarabun',sans-serif;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px" id="pi-upload-btn">📎 อัพโหลดสลิปการโอน</button>
-      <button class="btn-pri" onclick="submitPiSlip()">✅ ส่งสลิป</button>
-      <button class="btn-can" onclick="closeModal('m-premium-info')" style="margin-top:6px">ปิด</button>
+      <div style="padding:18px 20px">
+        <!-- comparison table -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px">
+          <!-- FREE col -->
+          <div style="background:#f8fafc;border-radius:12px;padding:14px;border:1.5px solid #e2e8f0">
+            <div style="font-size:12px;font-weight:800;color:#64748b;text-align:center;margin-bottom:10px;letter-spacing:.5px">FREE</div>
+            <div id="pi-free-list" style="display:flex;flex-direction:column;gap:7px"></div>
+          </div>
+          <!-- PREMIUM col -->
+          <div style="background:#faf5ff;border-radius:12px;padding:14px;border:1.5px solid #c4b5fd">
+            <div style="font-size:12px;font-weight:800;color:#7c3aed;text-align:center;margin-bottom:10px;letter-spacing:.5px">✨ PREMIUM</div>
+            <div id="pi-prem-list" style="display:flex;flex-direction:column;gap:7px"></div>
+          </div>
+        </div>
+        <button onclick="piGoStep2()" style="width:100%;padding:14px;background:linear-gradient(135deg,#7c3aed,#ec4899);color:#fff;border:none;border-radius:12px;font-family:'Sarabun',sans-serif;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(124,58,237,.3)">
+          💎 สมัคร Premium — 39 บาท/เดือน
+        </button>
+        <button class="btn-can" onclick="closeModal('m-premium-info')" style="margin-top:8px">ปิด</button>
+      </div>
     </div>
+
+    <!-- STEP 2: QR + slip -->
+    <div id="pi-step2" style="display:none">
+      <div style="background:linear-gradient(135deg,#7c3aed,#ec4899);padding:18px 24px 14px;display:flex;align-items:center;gap:12px">
+        <button onclick="piGoStep1()" style="background:rgba(255,255,255,.25);border:none;border-radius:8px;color:#fff;padding:5px 12px;font-family:'Sarabun',sans-serif;font-size:13px;cursor:pointer">← กลับ</button>
+        <div style="color:#fff;font-weight:700;font-size:15px">ชำระเงิน &amp; ส่งสลิป</div>
+      </div>
+      <div style="padding:20px 24px 24px">
+        <div style="background:#f9f5ff;border-radius:12px;padding:16px;text-align:center;margin-bottom:16px">
+          <div style="font-size:12px;font-weight:700;color:#7c3aed;margin-bottom:8px">สแกน QR พร้อมเพย์</div>
+          <div style="width:150px;height:150px;overflow:hidden;border-radius:10px;margin:0 auto 8px;box-shadow:0 2px 8px rgba(0,0,0,.12)">
+            <img src="./promptpay-qr.jpg" alt="QR" style="width:150px;height:auto;margin-top:-60px;display:block">
+          </div>
+          <div style="font-size:14px;color:#553c9a;font-weight:700">39 บาท / เดือน</div>
+          <div style="font-size:11px;color:#94a3b8;margin-top:4px">ทีมงานจะเปิดสิทธิ์ภายใน 24 ชั่วโมง</div>
+        </div>
+        <input type="file" id="pi-slip-file" accept="image/*" onchange="previewPiSlip(event)" style="display:none">
+        <img id="pi-slip-img" style="display:none;width:100%;border-radius:10px;margin-bottom:10px;max-height:160px;object-fit:contain" alt="">
+        <button onclick="document.getElementById('pi-slip-file').click()" style="width:100%;padding:13px;background:linear-gradient(135deg,#f472b6,#fb923c);color:#fff;border:none;border-radius:10px;font-family:'Sarabun',sans-serif;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px" id="pi-upload-btn">📎 อัพโหลดสลิปการโอน</button>
+        <button class="btn-pri" onclick="submitPiSlip()">✅ ส่งสลิป</button>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -2116,27 +2141,38 @@ async function revokePremiumDirect(email){
     loadPremiumUsers();
   }catch(e){ alert('เกิดข้อผิดพลาด: '+e.message); }
 }
-function openPremiumInfo(){
-  if(!S.user){ S.pendingFeature='payment'; openModal('m-login'); return; }
-  const premFeatures = FEATURE_LIST.filter(f => getFeatureOn(f.id) && getFeaturePrem(f.id));
-  const container = document.getElementById('premium-info-features');
-  const descMap = {
-    planner: 'จัดตารางเรียนทั้ง 4 ปี ติดตามหน่วยกิตและสถานะแต่ละวิชาได้ครบถ้วน',
-    grades:  'กรอกคะแนนแต่ละองค์ประกอบ คำนวณเกรดอัตโนมัติ วางแผนว่าจะดรอปหรือสู้ต่อ',
-    review:  'อ่านรีวิววิชาจากรุ่นพี่ครบทุกวิชาในมช. ช่วยตัดสินใจก่อนเลือกลงวิชา',
-    daily:   'จดงาน วางแผนรายวัน พร้อมวันหยุดไทย บันทึกโน้ตแต่ละวัน',
-  };
-  container.innerHTML = premFeatures.length ? premFeatures.map(f=>`
-    <div style="display:flex;align-items:flex-start;gap:12px;background:#f9f5ff;border-radius:10px;padding:12px 14px">
-      <div style="font-size:24px;flex-shrink:0">${f.icon}</div>
-      <div>
-        <div style="font-weight:700;font-size:14px;color:#1a365d">${f.name}</div>
-        <div style="font-size:12px;color:#64748b;margin-top:3px;line-height:1.5">${descMap[f.id]||''}</div>
-      </div>
-    </div>
-  `).join('') : '<div style="text-align:center;color:#94a3b8;font-size:13px;padding:12px">ยังไม่มีฟีเจอร์ Premium ในขณะนี้</div>';
+const PI_DESC = {
+  planner: 'จัดตารางเรียนทั้ง 4 ปี ติดตามหน่วยกิตและสถานะแต่ละวิชา',
+  grades:  'คำนวณเกรดอัตโนมัติ วางแผนว่าจะดรอปหรือสู้ต่อ',
+  review:  'อ่านรีวิววิชาจากรุ่นพี่ครบทุกวิชาในมช.',
+  daily:   'จดงาน วางแผนรายวัน พร้อมวันหยุดไทย',
+};
+function piGoStep1(){
+  document.getElementById('pi-step1').style.display='';
+  document.getElementById('pi-step2').style.display='none';
+}
+function piGoStep2(){
+  if(!S.user){ closeModal('m-premium-info'); S.pendingFeature='payment'; openModal('m-login'); return; }
+  document.getElementById('pi-step1').style.display='none';
+  document.getElementById('pi-step2').style.display='';
   document.getElementById('pi-slip-img').style.display='none';
   document.getElementById('pi-upload-btn').textContent='📎 อัพโหลดสลิปการโอน';
+}
+function openPremiumInfo(){
+  const freeFeatures = FEATURE_LIST.filter(f => getFeatureOn(f.id) && !getFeaturePrem(f.id));
+  const premFeatures = FEATURE_LIST.filter(f => getFeatureOn(f.id) && getFeaturePrem(f.id));
+  const row = (f) => `<div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#374151">
+    <span style="font-size:16px">${f.icon}</span><span>${f.name}</span></div>`;
+  document.getElementById('pi-free-list').innerHTML = freeFeatures.length
+    ? freeFeatures.map(row).join('')
+    : '<div style="font-size:12px;color:#94a3b8">ไม่มี</div>';
+  document.getElementById('pi-prem-list').innerHTML = premFeatures.length
+    ? premFeatures.map(f=>`<div style="display:flex;align-items:flex-start;gap:8px">
+        <span style="font-size:16px;flex-shrink:0">${f.icon}</span>
+        <div><div style="font-size:12.5px;font-weight:700;color:#553c9a">${f.name}</div>
+        <div style="font-size:11px;color:#7c6b9e;margin-top:1px">${PI_DESC[f.id]||''}</div></div></div>`).join('')
+    : '<div style="font-size:12px;color:#94a3b8">ยังไม่มี</div>';
+  piGoStep1();
   document.getElementById('m-premium-info').classList.remove('hidden');
 }
 function previewPiSlip(e){
